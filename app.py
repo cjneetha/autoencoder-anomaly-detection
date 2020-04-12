@@ -141,11 +141,13 @@ if go_button:
 		
 	rc_loss = test_x.mae.iloc[0]
 	mean_rc_loss = train_x['mae'].mean().round(4)
+	stddev_rc_loss = train_x['mae'].std().round(4)
 	if rc_loss > threshold:
-		text = 'The new point is an **Anomaly**, because its reconstruction loss is greater than the threshold'
+		text = '**Prediction:** <br>The new point is an **Anomaly**, because its reconstruction loss is **greater than the threshold**.'
 		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
-		' + str(mean_rc_loss) +'**. The loss to reconstruct the the new point was **' \
-		+ str(rc_loss) + '**, which is much higher than that. Therfore, it is unlikely to belong to the\
+		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. The loss to reconstruct the the new point was **' \
+		+ str(rc_loss) + '**, which is much higher than that, and it\'s higher than the threshold you\'ve set. \
+		Therfore, it is unlikely to belong to the\
 		training data distribution. <br><br>If you think the prediction is wrong, you can try:<br> \
 		- tweaking the network by **decreasing** the number of neurons. <br>\
 		- training for **fewer** epochs, as the network could have **overfit**. <br>\
@@ -153,11 +155,12 @@ if go_button:
 		Also, keep in mind that in an autoencoder network, the 2nd hidden layer is where the compression happens, \
 		and since there are only 2 features, the number of neurons in the 2nd hidden layer should be 1 or at most 2.'
 	else:
-		text = 'The new point is **not an Anomaly** since its reconstruction loss is less than the threshold.'
+		text = '**Prediction:** <br>The new point is **not an Anomaly**, because its reconstruction loss is **less than the threshold**.'
 		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
-		' + str(mean_rc_loss) +'**. The loss to reconstruct the new point was **' \
-		+ str(rc_loss) + '**, which is not too far away. Therfore, it is likely to belong to the\
-		training data distribution. <br><br>If you think the prediction is wrong, you can try:<br> \
+		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. The loss to reconstruct the new point was **' \
+		+ str(rc_loss) + '**, which isn\'t too far away, and it\'s within the threshold you\'ve set. \
+		Therfore, it is likely to belong to the training data distribution. <br><br>\
+		If you think the prediction is wrong, you can try:<br> \
 		- tweaking the network by **increasing** the number of neurons. <br>\
 		- training for **more** epochs, as the network could have **underfit** <br>\
 		- **decreasing** the outlier threshold. <br><br>\
@@ -177,7 +180,7 @@ if go_button:
 	scatter_fig = px.scatter(to_plot, x='x', y='y', color='type', size='size')
 	fig_placeholder.plotly_chart(scatter_fig)
 	st.plotly_chart(result_fig)
-	message.markdown(text)
+	message.markdown(text, unsafe_allow_html=True)
 
 	st.markdown(explanation, unsafe_allow_html=True)
 
