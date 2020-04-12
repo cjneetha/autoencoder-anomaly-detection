@@ -86,7 +86,7 @@ num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer',
 num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer', 
 	1, 5, 1)
 act_function = st.sidebar.selectbox('Activation Function', 
-	['elu', 'relu', 'tanh', 'sigmoid'], index=0)
+	['relu', 'elu', 'tanh', 'sigmoid'], index=0)
 epochs = st.sidebar.slider('Epochs', 100, 1000, 200)
 
 # Sidebar new point inputs
@@ -146,7 +146,7 @@ if go_button:
 		text = '**Prediction:** <br>The new point is an **Anomaly**, because its reconstruction loss is **greater than the threshold**.'
 		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
 		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. The loss to reconstruct the the new point was **' \
-		+ str(rc_loss) + '**, which is much higher than that, and it\'s higher than the threshold you\'ve set. \
+		+ str(rc_loss) + '**, which is much higher than that, and it\'s above than the threshold you\'ve set. \
 		Therfore, it is unlikely to belong to the\
 		training data distribution. <br><br>If you think the prediction is wrong, you can try:<br> \
 		- tweaking the network by **decreasing** the number of neurons. <br>\
