@@ -7,4 +7,4 @@ The number of neurons in the middle layers are usually set to be fewer than the 
 
 ![](https://www.pyimagesearch.com/wp-content/uploads/2020/02/keras_autoencoders_applications.png)
 
-Application areas include Anomaly Detection, Image Denoising.
+Application areas include Anomaly Detection, Image Denoising, etc.
