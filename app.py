@@ -140,10 +140,29 @@ if go_button:
 
 		
 	rc_loss = test_x.mae.iloc[0]
+	mean_rc_loss = train_x['mae'].mean().round(4)
 	if rc_loss > threshold:
 		text = 'The new point is an **Anomaly**, because its reconstruction loss is greater than the threshold'
+		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
+		' + str(mean_rc_loss) +'**. The loss to reconstruct the the new point was **' \
+		+ str(rc_loss) + '**, which is much higher than that. Therfore, it is unlikely to belong to the\
+		training data distribution. <br><br>If you think the prediction is wrong, you can try:<br> \
+		- tweaking the network by **decreasing** the number of neurons. <br>\
+		- training for **fewer** epochs, as the network could have **overfit**. <br>\
+		- **increasing** the outlier threshold. <br><br>\
+		Also, keep in mind that in an autoencoder network, the 2nd hidden layer is where the compression happens, \
+		and since there are only 2 features, the number of neurons in the 2nd hidden layer should be 1 or at most 2.'
 	else:
 		text = 'The new point is **not an Anomaly** since its reconstruction loss is less than the threshold.'
+		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
+		' + str(mean_rc_loss) +'**. The loss to reconstruct the new point was **' \
+		+ str(rc_loss) + '**, which is not too far away. Therfore, it is likely to belong to the\
+		training data distribution. <br><br>If you think the prediction is wrong, you can try:<br> \
+		- tweaking the network by **increasing** the number of neurons. <br>\
+		- training for **more** epochs, as the network could have **underfit** <br>\
+		- **decreasing** the outlier threshold. <br><br>\
+		Also, keep in mind that in an autoencoder network, the 2nd hidden layer is where the compression happens, \
+		and since there are only 2 features, the number of neurons in the 2nd hidden layer should be 1 or at most 2.'
 
 	result = pd.DataFrame({'value': [threshold, rc_loss],
 		'type': ['Threshold', 'Reconstruction Loss']})
@@ -159,5 +178,7 @@ if go_button:
 	fig_placeholder.plotly_chart(scatter_fig)
 	st.plotly_chart(result_fig)
 	message.markdown(text)
+
+	st.markdown(explanation, unsafe_allow_html=True)
 
 
