@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -19,6 +20,15 @@ st.markdown('1) On the left sidebar, configure the Network Architecture.')
 st.markdown('2) Create a new data point.')
 st.markdown('3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.')
 
+
+@st.cache(suppress_st_warning=True)
+def get_data():
+	np.random.seed(42)
+	x = np.random.normal(0, 1, 100)
+	y = np.random.normal(0, 1, 100)
+	data = pd.DataFrame(zip(x, y), columns=['x', 'y'])
+	return data
+
 @st.cache(suppress_st_warning=True)
 def plot_data(data):
 	data = data.copy()
@@ -27,16 +37,9 @@ def plot_data(data):
 	return fig
 
 @st.cache(suppress_st_warning=True)
-def get_data():
-	x = np.random.normal(0, 1, 100)
-	y = np.random.normal(0, 1, 100)
-	data = pd.DataFrame(zip(x, y), columns=['x', 'y'])
-	return data
+def autoencoder(data, num_units_h1, num_units_h2, act_func):
 
-@st.cache(suppress_st_warning=True)
-def run_autoencoder(train_x, num_units_h1, num_units_h2, act_func):
-
-	train_x = train_x.copy()
+	train_x = data.copy()
 	model=Sequential() 
 	model.add(Dense(num_units_h1, activation=act_func,
 	                kernel_initializer='glorot_uniform',
@@ -44,7 +47,6 @@ def run_autoencoder(train_x, num_units_h1, num_units_h2, act_func):
 	                input_shape=(train_x.shape[1],)
 	               )
 	         )
-
 	model.add(Dense(num_units_h2, activation=act_func,
 	                kernel_initializer='glorot_uniform'))
 	model.add(Dense(train_x.shape[1],
@@ -57,9 +59,9 @@ def run_autoencoder(train_x, num_units_h1, num_units_h2, act_func):
 
 # Sidebar inputs
 st.sidebar.header('Configure Network Architecture')
-num_units_h1 = st.sidebar.slider('Number of Units in the 1st Hidden Layer', 
+num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer', 
 	1, 5, 5)
-num_units_h2 = st.sidebar.slider('Number of Units in the 2nd Hidden Layer', 
+num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer', 
 	1, 5, 1)
 act_function = st.sidebar.selectbox('Activation Function', 
 	['elu', 'relu', 'tanh', 'sigmoid'], index=0)
@@ -68,25 +70,26 @@ x = float(st.sidebar.text_input('Enter X:', 0))
 y = float(st.sidebar.text_input('Enter Y:', 0))
 
 # Plot data and get reconstruction mae for training data
-train_x = get_data()
-fig = plot_data(train_x)
+data = get_data()
+fig = plot_data(data)
 fig_placeholder = st.empty()
 fig_placeholder.plotly_chart(fig)
 
 message = st.empty()
 message.warning('Training Network...')
-model, train_x = run_autoencoder(train_x, num_units_h1, num_units_h2, act_function)
-message.success('Network Trained! Select a Threshold & Click \'Go\' on the Left Sidebar!')
+model, train_x = autoencoder(data, num_units_h1, num_units_h2, act_function)
+message.success('Network Trained... Select a Threshold & Click \'Go\' on the Left Sidebar!')
 
 st.sidebar.header('Select Anomaly Threshold')
 # Display training mae distribution
-sns.distplot(train_x.mae)
+sns.distplot(train_x.mae, bins=50)
 plt.title('Reconstruction Loss Distribution for Training Points')
 st.sidebar.pyplot()
 
 # Select threshold
-threshold = st.sidebar.slider('Anomaly Threshold', 
-	train_x.mae.min(), train_x.mae.max(), train_x.mae.quantile(0.9))
+threshold = float(st.sidebar.text_input('Anomaly Threshold:', train_x.mae.quantile(0.95).round(2)))
+#threshold = st.sidebar.slider('Anomaly Threshold', 
+#	train_x.mae.min(), train_x.mae.max(), train_x.mae.quantile(0.95))
 go_button = st.sidebar.button('Go')
 
 # If Go button pressed
@@ -109,11 +112,11 @@ if go_button:
 	rc_loss = test_x.mae.iloc[0]
 	st.subheader('Reconstruction Loss: ' + str(rc_loss))
 	if rc_loss > threshold:
-		text = 'The new point is an **Anomaly**, becasue its\
+		text = 'The new point is an **Anomaly**, because its\
 		reconstruction loss is **greater** than the **threshold of ' \
 		+ str(round(threshold, 4)) + '**'
 	else:
-		text = 'The new point is **not an Anomaly**, becasue its\
+		text = 'The new point is **not an Anomaly**, because its\
 		reconstruction loss is **less** than the threshold of ' + str(round(threshold, 4))
 	message.markdown(text)
 
