@@ -25,8 +25,8 @@ def get_data(distribution='normal', seed=42):
 		x = np.random.beta(0.5, 0.5, 100)
 		y = np.random.beta(0.5, 0.5, 100)
 	elif distribution == 'uniform':
-		x = np.random.uniform(-1.5, -1.5, 100)
-		y = np.random.uniform(-1.5, -1.5, 100)
+		x = np.random.uniform(-1.5, 1.5, 100)
+		y = np.random.uniform(-1.5, 1.5, 100)
 
 	data = pd.DataFrame(zip(x, y), columns=['x', 'y'])
 	return data
