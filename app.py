@@ -52,18 +52,24 @@ def autoencoder(data, num_units_h1, num_units_h2, act_func):
 	                kernel_initializer='glorot_uniform'))
 	model.add(Dense(train_x.shape[1],
 	                kernel_initializer='glorot_uniform'))
-	model.compile(loss='mae',optimizer='adam')
-	model.fit(train_x, train_x, verbose=0)
+	model.compile(loss='mae', optimizer='adam')
+	model.fit(train_x, train_x, batch_size=20, epochs=100, verbose=0)
 	pred_x = pd.DataFrame(model.predict(train_x), columns=train_x.columns)
 	train_x['mae'] = (pred_x - train_x).abs().mean(axis=1).values
 	return model, train_x
 
 
 st.title('Anomaly Detector')
-st.markdown('This app uses an Autoencoder Network to classify a data point as an Anomaly.')
-st.markdown('1) On the left sidebar, configure the Network Architecture.')
-st.markdown('2) Create a new data point.')
-st.markdown('3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.')
+#st.markdown('This app uses an Autoencoder Network to classify a data point as an Anomaly.')
+#st.markdown('1) On the left sidebar, configure the Network Architecture.')
+#st.markdown('2) Create a new data point.')
+#st.markdown('3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.')
+instructions = st.empty()
+instructions.markdown('This app uses an Autoencoder Network to classify a data point as an Anomaly.<br>\
+	1) On the left sidebar, configure the Network Architecture. <br>\
+	2) Create a new data point. <br> \
+	3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.',
+	 unsafe_allow_html=True)
 
 
 # Sidebar data inputs
@@ -112,6 +118,10 @@ go_button = st.sidebar.button('Go')
 
 # If Go button pressed
 if go_button:
+
+	# Remove the initial instructions to clear some space
+	instructions.empty()
+
 	message.warning('Calculating Reconstruction Loss...')
 	# Create dataframe with entered data
 	test_x = pd.DataFrame({'x': [x], 'y': [y]})
@@ -125,10 +135,9 @@ if go_button:
 	to_plot['type'] = 'Inliers'
 	to_plot.at[to_plot.index[-2], 'type'] = 'New Point'
 	to_plot.at[to_plot.index[-1], 'type'] = 'Reconstructed'
-	fig = px.scatter(to_plot, x='x', y='y', color='type', size='size')
-	fig_placeholder.plotly_chart(fig)
-	rc_loss = test_x.mae.iloc[0]
 
+		
+	rc_loss = test_x.mae.iloc[0]
 	if rc_loss > threshold:
 		text = 'The new point is an **Anomaly**, because its reconstruction loss is greater than the threshold'
 	else:
@@ -136,17 +145,17 @@ if go_button:
 
 	result = pd.DataFrame({'value': [threshold, rc_loss],
 		'type': ['Threshold', 'Reconstruction Loss']})
-	
 	result_fig = go.Figure(go.Bar(
             x=result.value,
             y=result.type,
             marker_color=result.value,
             orientation='h'))
-	result_fig.update_layout(height=230, width=600, hovermode="y")
+	result_fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=100, width=600, hovermode="y")
 
 
+	scatter_fig = px.scatter(to_plot, x='x', y='y', color='type', size='size')
+	fig_placeholder.plotly_chart(scatter_fig)
 	st.plotly_chart(result_fig)
-
 	message.markdown(text)
 
 
