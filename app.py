@@ -2,9 +2,11 @@ import os
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
+import altair as alt
 sns.set()
 from keras.models import Sequential
 from keras.layers import Dense
@@ -22,10 +24,27 @@ st.markdown('3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.')
 
 
 @st.cache(suppress_st_warning=True)
-def get_data():
-	np.random.seed(42)
-	x = np.random.normal(0, 1, 100)
-	y = np.random.normal(0, 1, 100)
+def get_data(distribution='normal', seed=42):
+	np.random.seed(seed)
+	if distribution == 'gaussian':
+		x = np.random.normal(0, 1, 100)
+		y = np.random.normal(0, 1, 100)
+	elif distribution == 'uniform':
+		x = np.random.uniform(0, 1, 100)
+		y = np.random.uniform(0, 1, 100)
+	elif distribution == 'exponential':
+		x = np.random.exponential(scale=1, size=100)
+		y = np.random.exponential(scale=1, size=100)
+	elif distribution == 'beta (α=β=0.5)':
+		x = np.random.beta(a=0.5, b=0.5, size=100)
+		y = np.random.beta(a=0.5, b=0.5, size=100)
+	elif distribution == 'chisquare (k=1)':
+		x = np.random.chisquare(1, size=100)
+		y = np.random.chisquare(1, size=100)
+	else:
+		x = np.random.normal(0, 1, 100)
+		y = np.random.normal(0, 1, 100)
+
 	data = pd.DataFrame(zip(x, y), columns=['x', 'y'])
 	return data
 
@@ -58,6 +77,13 @@ def autoencoder(data, num_units_h1, num_units_h2, act_func):
 	return model, train_x
 
 # Sidebar inputs
+st.sidebar.header('Configure Data')
+data_dist = st.sidebar.selectbox('Select Data Distribution', 
+	['gaussian', 'uniform', 'exponential', 'beta (α=β=0.5)', 'chisquare (k=1)'])
+
+
+data_seed = st.sidebar.slider('Choose a Random Seed to Resample Data', 0, 100)
+
 st.sidebar.header('Configure Network Architecture')
 num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer', 
 	1, 5, 5)
@@ -65,16 +91,21 @@ num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer',
 	1, 5, 1)
 act_function = st.sidebar.selectbox('Activation Function', 
 	['elu', 'relu', 'tanh', 'sigmoid'], index=0)
+
 st.sidebar.header('Create New Point')
-x = float(st.sidebar.text_input('Enter X:', 0))
-y = float(st.sidebar.text_input('Enter Y:', 0))
+x = float(st.sidebar.text_input('Enter X:', -1))
+y = float(st.sidebar.text_input('Enter Y:', 1))
+
 
 # Plot data and get reconstruction mae for training data
-data = get_data()
+data = get_data(data_dist, data_seed)
 fig = plot_data(data)
 fig_placeholder = st.empty()
 fig_placeholder.plotly_chart(fig)
 
+threshold_placeholder = st.empty()
+rcloss_placeholder = st.empty()
+st.write('	')
 message = st.empty()
 message.warning('Training Network...')
 model, train_x = autoencoder(data, num_units_h1, num_units_h2, act_function)
@@ -110,19 +141,26 @@ if go_button:
 	fig = px.scatter(to_plot, x='x', y='y', color='color', size='size')
 	fig_placeholder.plotly_chart(fig)
 	rc_loss = test_x.mae.iloc[0]
-	st.subheader('Reconstruction Loss: ' + str(rc_loss))
+	#rcloss_placeholder.subheader('Reconstruction Loss: ' + str(rc_loss))
+	#threshold_placeholder.subheader('Threshold: ' + str(round(threshold, 4)))
 	if rc_loss > threshold:
-		text = 'The new point is an **Anomaly**, because its\
-		reconstruction loss is **greater** than the **threshold of ' \
-		+ str(round(threshold, 4)) + '**'
+		text = 'The new point is an **Anomaly**, because its reconstruction loss is greater than the threshold'
 	else:
-		text = 'The new point is **not an Anomaly**, because its\
-		reconstruction loss is **less** than the threshold of ' + str(round(threshold, 4))
+		text = 'The new point is **not an Anomaly** since its reconstruction loss is less than the threshold.'
+
+	result = pd.DataFrame({'value': [threshold, rc_loss],
+		'type': ['Threshold', 'Reconstruction Loss']})
+	
+	result_fig = go.Figure(go.Bar(
+            x=result.value,
+            y=result.type,
+            marker_color=result.value,
+            orientation='h'))
+	result_fig.update_layout(height=230, width=600, hovermode="y")
+
+
+	st.plotly_chart(result_fig)
+
 	message.markdown(text)
-
-
-
-
-
 
 
