@@ -39,7 +39,7 @@ def plot_data(data):
 	return fig
 
 @st.cache(suppress_st_warning=True)
-def autoencoder(data, num_units_h1, num_units_h2, act_func):
+def autoencoder(data, num_units_h1, num_units_h2, act_func, epochs):
 	train_x = data.copy()
 	model=Sequential() 
 	model.add(Dense(num_units_h1, activation=act_func,
@@ -53,7 +53,7 @@ def autoencoder(data, num_units_h1, num_units_h2, act_func):
 	model.add(Dense(train_x.shape[1],
 	                kernel_initializer='glorot_uniform'))
 	model.compile(loss='mae', optimizer='adam')
-	model.fit(train_x, train_x, batch_size=20, epochs=100, verbose=0)
+	model.fit(train_x, train_x, batch_size=20, epochs=epochs, verbose=0)
 	pred_x = pd.DataFrame(model.predict(train_x), columns=train_x.columns)
 	train_x['mae'] = (pred_x - train_x).abs().mean(axis=1).values
 	return model, train_x
@@ -87,6 +87,7 @@ num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer',
 	1, 5, 1)
 act_function = st.sidebar.selectbox('Activation Function', 
 	['elu', 'relu', 'tanh', 'sigmoid'], index=0)
+epochs = st.sidebar.slider('Epochs', 100, 1000, 200)
 
 # Sidebar new point inputs
 st.sidebar.header('Create New Point')
@@ -102,7 +103,7 @@ fig_placeholder.plotly_chart(fig)
 st.write('	')
 message = st.empty()
 message.warning('Training Network...')
-model, train_x = autoencoder(data, num_units_h1, num_units_h2, act_function)
+model, train_x = autoencoder(data, num_units_h1, num_units_h2, act_function, epochs)
 message.success('Network Trained... select a threshold on the left & click \'Go\'!')
 
 # Sidebar threshold inputs
@@ -111,6 +112,7 @@ st.sidebar.header('Select Anomaly Threshold')
 sns.distplot(train_x.mae, bins=50)
 plt.title('Reconstruction Loss Distribution for Training Points')
 st.sidebar.pyplot()
+
 # Select threshold
 threshold = float(st.sidebar.text_input('Anomaly Threshold:', train_x.mae.quantile(0.95).round(2)))
 go_button = st.sidebar.button('Go')
