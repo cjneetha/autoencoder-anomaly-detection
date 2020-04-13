@@ -65,7 +65,7 @@ st.title('Anomaly Detector')
 #st.markdown('2) Create a new data point.')
 #st.markdown('3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.')
 instructions = st.empty()
-instructions.markdown('This app uses an Autoencoder Network to classify a data point as an Anomaly.<br>\
+instructions.markdown('This app trains a deep Autoencoder Network that learns to classify a data point as an Anomaly.<br>\
 	1) On the left sidebar, configure the Network Architecture. <br>\
 	2) Create a new data point. <br> \
 	3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.',
@@ -83,6 +83,8 @@ data = get_data(data_dist, seed)
 st.sidebar.header('Configure Network Architecture')
 num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer', 
 	1, 5, 5)
+st.sidebar.markdown('This 2nd hidden layer is where the compression happens, so the number of\
+	neurons should be 1 or at most 2')
 num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer', 
 	1, 5, 1)
 act_function = st.sidebar.selectbox('Activation Function', 
@@ -91,8 +93,8 @@ epochs = st.sidebar.slider('Epochs', 100, 1000, 200)
 
 # Sidebar new point inputs
 st.sidebar.header('Create New Point')
-x = float(st.sidebar.text_input('Enter X:', 2))
-y = float(st.sidebar.text_input('Enter Y:', 2))
+x = st.sidebar.text_input('Enter X:', 2)
+y = st.sidebar.text_input('Enter Y:', 2)
 
 
 # Plot data and get reconstruction mae for training data
@@ -104,7 +106,7 @@ st.write('	')
 message = st.empty()
 message.warning('Training Network...')
 model, train_x = autoencoder(data, num_units_h1, num_units_h2, act_function, epochs)
-message.success('Network Trained... select a threshold on the left & click \'Go\'!')
+message.success('Network Trained... select a threshold on the left and click \'Go\'!')
 
 # Sidebar threshold inputs
 st.sidebar.header('Select Anomaly Threshold')
@@ -112,14 +114,19 @@ st.sidebar.header('Select Anomaly Threshold')
 sns.distplot(train_x.mae, bins=50)
 plt.title('Reconstruction Loss Distribution for Training Points')
 st.sidebar.pyplot()
-
 # Select threshold
-threshold = float(st.sidebar.text_input('Anomaly Threshold:', train_x.mae.quantile(0.95).round(2)))
+st.sidebar.markdown('Leave this at the suggested default value or change it based on the training MAE distribution')
+threshold = st.sidebar.text_input('Anomaly Threshold:', train_x.mae.quantile(0.95).round(2))
+
+# SUBMIT BUTTON
 go_button = st.sidebar.button('Go')
 
-
 # If Go button pressed
-if go_button:
+if go_button and x != '' and y != '' and threshold != '':
+	
+	threshold = float(threshold)
+	x = float(x)
+	y = float(y)
 
 	# Remove the initial instructions to clear some space
 	instructions.empty()
@@ -143,29 +150,37 @@ if go_button:
 	mean_rc_loss = train_x['mae'].mean().round(4)
 	stddev_rc_loss = train_x['mae'].std().round(4)
 	if rc_loss > threshold:
+		
 		text = '**Prediction:** <br>The new point is an **Anomaly**, because its reconstruction loss is **greater than the threshold**.'
+
 		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
-		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. The loss to reconstruct the the new point was **' \
-		+ str(rc_loss) + '**, which is much higher than that, and it\'s above than the threshold you\'ve set. \
-		Therfore, it is unlikely to belong to the\
-		training data distribution. <br><br>If you think the prediction is wrong, you can try:<br> \
+		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. \
+		The loss to reconstruct the the new point was **' + str(rc_loss) + '**,'
+		if rc_loss > train_x.mae.quantile(0.95).round(4):
+			explanation += ' which is much higher than that, so it\'s unlikely to belong to the training data distribution. And since '
+		else:
+			explanation += ' which isn\'t too far away, so it could still belong to the training distribution. But since, '
+		explanation += 'it\'s above the threshold you\'ve set, it was predicted as an **Anomaly**.<br><br>\
+		If you think the prediction is wrong, you can try:<br> \
 		- tweaking the network by **decreasing** the number of neurons. <br>\
 		- training for **fewer** epochs, as the network could have **overfit**. <br>\
-		- **increasing** the outlier threshold. <br><br>\
-		Also, keep in mind that in an autoencoder network, the 2nd hidden layer is where the compression happens, \
-		and since there are only 2 features, the number of neurons in the 2nd hidden layer should be 1 or at most 2.'
+		- **increasing** the outlier threshold.'
 	else:
+		
 		text = '**Prediction:** <br>The new point is **not an Anomaly**, because its reconstruction loss is **less than the threshold**.'
+		
 		explanation = '**Explanation:** <br> The average loss for reconstructing the training data was **\
-		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. The loss to reconstruct the new point was **' \
-		+ str(rc_loss) + '**, which isn\'t too far away, and it\'s within the threshold you\'ve set. \
-		Therfore, it is likely to belong to the training data distribution. <br><br>\
+		' + str(mean_rc_loss) +'** with a std deviation of **' + str(stddev_rc_loss) + '**. \
+		The loss to reconstruct the new point was **' + str(rc_loss) + '**,'	
+		if rc_loss > train_x.mae.quantile(0.95).round(4):
+			explanation += ' which is much higher than that, so it\'s unlikely to belong to the training data distribution. But since '
+		else:
+			explanation += ' which isn\'t too far away, so it\'s likely to belong to the training distribution. And since, '
+		explanation += 'it\'s within the threshold you\'ve set, it was predicted as **not an Anomaly**.<br><br>\
 		If you think the prediction is wrong, you can try:<br> \
 		- tweaking the network by **increasing** the number of neurons. <br>\
 		- training for **more** epochs, as the network could have **underfit** <br>\
-		- **decreasing** the outlier threshold. <br><br>\
-		Also, keep in mind that in an autoencoder network, the 2nd hidden layer is where the compression happens, \
-		and since there are only 2 features, the number of neurons in the 2nd hidden layer should be 1 or at most 2.'
+		- **decreasing** the outlier threshold.'
 
 	result = pd.DataFrame({'value': [threshold, rc_loss],
 		'type': ['Threshold', 'Reconstruction Loss']})
