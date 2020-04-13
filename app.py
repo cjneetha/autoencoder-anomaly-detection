@@ -79,11 +79,12 @@ data = get_data(data_dist, seed)
 # Sidebar network inputs
 st.sidebar.header('Configure Network Architecture')
 num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer', 
-	1, 5, 5)
-st.sidebar.markdown('This 2nd hidden layer is where the compression happens, so the number of\
-	neurons in this layer should be 1 or at most 2')
+	1, 10, 5)
 num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer', 
 	1, 5, 1)
+st.sidebar.markdown('The 2nd hidden layer is where the compression happens, so the number of\
+	neurons in this layer should be 1 or at most 2.')
+
 act_function = st.sidebar.selectbox('Activation Function', 
 	['relu', 'elu', 'tanh', 'sigmoid'], index=0)
 epochs = st.sidebar.slider('Epochs', 100, 1000, 200)
@@ -105,12 +106,12 @@ message.success('Network Trained... now create a test data point on the left and
 # Sidebar threshold inputs
 st.sidebar.header('Select Anomaly Threshold')
 # Display training mae distribution
-sns.distplot(train_x.mae, bins=50)
+sns.distplot(train_x.mae, bins=30)
 plt.title('Reconstruction Loss Distribution for Training Points')
 st.sidebar.pyplot()
 # Select threshold
-st.sidebar.markdown('Select a threshold based on the training MAE distribution. The suggested value would be \
-	' + str(train_x.mae.quantile(0.95).round(2)) + ' becasue it\'s the 95th percentile.')
+st.sidebar.markdown('Select a threshold based on the training MAE distribution. A suggested value would be \
+	the 95th percentile of the MAEs, which is currently ' + str(train_x.mae.quantile(0.95).round(2)))
 threshold = st.sidebar.text_input('Anomaly Threshold:', train_x.mae.quantile(0.95).round(2))
 try:
 	float(threshold)
