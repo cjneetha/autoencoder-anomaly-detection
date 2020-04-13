@@ -84,7 +84,7 @@ st.sidebar.header('Configure Network Architecture')
 num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer', 
 	1, 5, 5)
 st.sidebar.markdown('This 2nd hidden layer is where the compression happens, so the number of\
-	neurons should be 1 or at most 2')
+	neurons in this layer should be 1 or at most 2')
 num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer', 
 	1, 5, 1)
 act_function = st.sidebar.selectbox('Activation Function', 
