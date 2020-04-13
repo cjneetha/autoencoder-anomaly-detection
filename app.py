@@ -60,14 +60,11 @@ def autoencoder(data, num_units_h1, num_units_h2, act_func, epochs):
 
 
 st.title('Anomaly Detector')
-#st.markdown('This app uses an Autoencoder Network to classify a data point as an Anomaly.')
-#st.markdown('1) On the left sidebar, configure the Network Architecture.')
-#st.markdown('2) Create a new data point.')
-#st.markdown('3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.')
 instructions = st.empty()
-instructions.markdown('This app trains a deep Autoencoder Network that learns to classify a data point as an Anomaly.<br>\
+instructions.markdown('This app trains a deep Autoencoder Network that learns to predict an unseen test data \
+	point as an Anomaly.<br>\
 	1) On the left sidebar, configure the Network Architecture. <br>\
-	2) Create a new data point. <br> \
+	2) Create a new data point to test. <br> \
 	3) Hit \'Go\' to test if it\'s an Anomaly based on a threshold.',
 	 unsafe_allow_html=True)
 
@@ -91,22 +88,19 @@ act_function = st.sidebar.selectbox('Activation Function',
 	['relu', 'elu', 'tanh', 'sigmoid'], index=0)
 epochs = st.sidebar.slider('Epochs', 100, 1000, 200)
 
-# Sidebar new point inputs
-st.sidebar.header('Create New Point')
-x = st.sidebar.text_input('Enter X:', 2)
-y = st.sidebar.text_input('Enter Y:', 2)
-
 
 # Plot data and get reconstruction mae for training data
 fig = plot_data(data)
 fig_placeholder = st.empty()
 fig_placeholder.plotly_chart(fig)
 
+
 st.write('	')
 message = st.empty()
 message.warning('Training Network...')
 model, train_x = autoencoder(data, num_units_h1, num_units_h2, act_function, epochs)
-message.success('Network Trained... select a threshold on the left and click \'Go\'!')
+message.success('Network Trained... now create a test data point on the left and click \'Go\'!')
+
 
 # Sidebar threshold inputs
 st.sidebar.header('Select Anomaly Threshold')
@@ -115,8 +109,23 @@ sns.distplot(train_x.mae, bins=50)
 plt.title('Reconstruction Loss Distribution for Training Points')
 st.sidebar.pyplot()
 # Select threshold
-st.sidebar.markdown('Leave this at the suggested default value or change it based on the training MAE distribution')
+st.sidebar.markdown('Select a threshold based on the training MAE distribution. The suggested value would be \
+	' + str(train_x.mae.quantile(0.95).round(2)) + ' becasue it\'s the 95th percentile.')
 threshold = st.sidebar.text_input('Anomaly Threshold:', train_x.mae.quantile(0.95).round(2))
+try:
+	float(threshold)
+except:
+	st.sidebar.warning('Enter a number as the threshold.')
+
+# Sidebar new point inputs
+st.sidebar.header('Create New Point')
+data_input = st.sidebar.text_input('Enter X, Y (comma-separated):', '2, 2')
+# x and y sanity check
+try:
+	x, y = data_input.split(',')
+except:
+	x = y = ''
+	st.sidebar.warning('Enter 2 numbers separated by a comma.')
 
 # SUBMIT BUTTON
 go_button = st.sidebar.button('Go')
