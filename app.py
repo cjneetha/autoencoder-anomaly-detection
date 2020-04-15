@@ -79,7 +79,7 @@ data = get_data(data_dist, seed)
 # Sidebar network inputs
 st.sidebar.header('Configure Network Architecture')
 num_units_h1 = st.sidebar.slider('Neurons in the 1st Hidden Layer', 
-	1, 10, 5)
+	1, 5, 5)
 num_units_h2 = st.sidebar.slider('Neurons in the 2nd Hidden Layer', 
 	1, 5, 1)
 st.sidebar.markdown('The 2nd hidden layer is where the compression happens, so the number of\
